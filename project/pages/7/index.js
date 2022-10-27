@@ -19,7 +19,5 @@ const app = document.getElementById('app')
 render(vnode, app)
 
 setTimeout(() => {
-    app.id = 'foo'
-    console.log(app.getAttribute('id'))
-    // render(null, document.getElementById('app'))
+    render(null, document.getElementById('app'))
 }, 2000)
