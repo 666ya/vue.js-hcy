@@ -1,10 +1,17 @@
+function shouldAsProps(el, key, value) {
+    if (key === 'form' && el.tagName === 'INPUT') {
+        return false
+    }
+    return key in el
+}
+
 function createRenderer(options) {
     const {
         createElement,
         setElementText,
-        insert
+        patchProps,
+        insert,
     } = options
-
     // 挂载
     function mountElememt(vnode, container) {
         const el = vnode.el = createElement(vnode.type)
@@ -19,29 +26,53 @@ function createRenderer(options) {
         // 属性
         if (vnode.props) {
             for (const key in vnode.props) {
-                if (key in el) {
-                    const type = typeof el[key]
-                    const value = vnode.props[key]
-                    if (type === 'boolean' && value === '') {
-                        el[key] = true
-                    } else {
-                        el[key] = value
-                    }
+                // const value = vnode.props[key]
+                // if (shouldAsProps(el, key, value)) {
+                //     const type = typeof el[key]
+                //     if (type === 'boolean' && value === '') {
+                //         el[key] = true
+                //     } else {
+                //         el[key] = value
+                //     }
 
-                } else {
-                    el.setAttribute(key, vnode.props[key])
-                }
+                // } else {
+                //     el.setAttribute(key, value)
+                // }
+                patchProps(el, key, null, vnode.props[key])
             }
         }
         insert(el, container)
     }
 
     function patch(n1, n2, container) {
-        if (!n1) {
-            // 第一次即挂载
-            mountElememt(n2, container)
-        } else {
-            // 更新打补丁
+        if (n1 && n1.type !== n2.type) {
+            umount(n1)
+            n1 = null
+        }
+        const {
+            type
+        } = n2
+        // vnode type分支
+        if (typeof type === 'string') {
+            // 元素标签
+            if (!n1) {
+                // 第一次即挂载
+                mountElememt(n2, container)
+            } else {
+                // 更新打补丁
+            }
+        } else if (typeof type === 'object') {
+            // 组件
+        } else if (typeof type === 'xx') {
+            // 其他
+        }
+
+    }
+    // 卸载
+    function umount(vnode) {
+        const parent = vnode.el.parentNode
+        if (parent) {
+            parent.removeChild(vnode.el)
         }
     }
 
@@ -49,7 +80,9 @@ function createRenderer(options) {
         if (vnode) {
             patch(container._vnode, vnode, container)
         } else {
-            container.innerHTML = ''
+            // 卸载
+            umount(container._vnode)
+            // container.innerHTML = ''
         }
         container._vnode = vnode
     }
