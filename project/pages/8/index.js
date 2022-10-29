@@ -64,53 +64,81 @@ const render = createRenderer(options).render
 //     }]
 // }
 // 属性
-const vnode = {
-    type: 'div',
-    props: {
-        id: 'box',
-        class: 'box',
-        onClick: [() => {
-            alert('点击1')
-        }, () => {
-            alert('点击2')
-        }],
-        onContextmenu: () => {
-            alert('onContextmenu')
-        }
-    },
-    children: [{
-        type: 'p',
-        children: [{
-            type: 'label',
-            children: '姓名'
-        }, {
-            type: 'input',
-            props: {
-                type: 'text',
-                disabled: '',
-                form: 'form1',
-                placeholder: '请输入姓名'
-            }
-        }]
-    }, {
-        type: 'p',
-        children: [{
-            type: 'label',
-            children: '备注'
-        }, {
-            type: 'input',
-            props: {
-                type: 'textarea',
-                disabled: false,
-                form: 'form2',
-                value: '请输入备注'
-            }
-        }]
-    }]
-}
+// const vnode = {
+//     type: 'div',
+//     props: {
+//         id: 'box',
+//         class: 'box',
+//         onClick: [() => {
+//             alert('点击1')
+//         }, () => {
+//             alert('点击2')
+//         }],
+//         onContextmenu: () => {
+//             alert('onContextmenu')
+//         }
+//     },
+//     children: [{
+//         type: 'p',
+//         children: [{
+//             type: 'label',
+//             children: '姓名'
+//         }, {
+//             type: 'input',
+//             props: {
+//                 type: 'text',
+//                 disabled: '',
+//                 form: 'form1',
+//                 placeholder: '请输入姓名'
+//             }
+//         }]
+//     }, {
+//         type: 'p',
+//         children: [{
+//             type: 'label',
+//             children: '备注'
+//         }, {
+//             type: 'input',
+//             props: {
+//                 type: 'textarea',
+//                 disabled: false,
+//                 form: 'form2',
+//                 value: '请输入备注'
+//             }
+//         }]
+//     }]
+// }
+
+// 事件冒泡
+const bol = ref(false)
 const app = document.getElementById('app')
-render(vnode, app)
+effect(() => {
+    console.log(bol.value)
+    const vnode = {
+        type: 'div',
+        props: bol.value ? {
+            props: {
+                class: 'box'
+            },
+            onClick: () => {
+                alert('事件冒泡到父元素')
+            }
+        } : {},
+        children: [{
+            type: 'p',
+            props: {
+                onClick: () => {
+                    bol.value = true
+                }
+            },
+            children: '事件冒泡和更新机制例子'
+        }]
+    }
+    render(vnode, document.getElementById('app'))
+})
+// render(vnode, app)
 
 // setTimeout(() => {
-//     render(vnode, app)
+//     bol.value = true
+//     // render(vnode, app)
 // }, 2000)

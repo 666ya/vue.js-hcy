@@ -12,7 +12,9 @@ function createRenderer(options) {
         patchProps,
         insert,
     } = options
-    // 挂载
+    /**
+     *  元素
+     */
     function mountElememt(vnode, container) {
         const el = vnode.el = createElement(vnode.type)
         if (typeof vnode.children === 'string') {
@@ -44,6 +46,10 @@ function createRenderer(options) {
         insert(el, container)
     }
 
+    function patchElement(n1, n2, container) {
+
+    }
+
     function patch(n1, n2, container) {
         if (n1 && n1.type !== n2.type) {
             umount(n1)
@@ -59,7 +65,7 @@ function createRenderer(options) {
                 // 第一次即挂载
                 mountElememt(n2, container)
             } else {
-                // 更新打补丁
+                patchElement(n1, n2, container)
             }
         } else if (typeof type === 'object') {
             // 组件
