@@ -1,5 +1,5 @@
-const Text = new Symbol()
-const Fragment = new Symbol()
+const Text = Symbol()
+const Fragment = Symbol()
 
 function shouldAsProps(el, key, value) {
     if (key === 'form' && el.tagName === 'INPUT') {
