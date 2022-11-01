@@ -96,7 +96,7 @@ function createRenderer(options) {
             }
         }
         // 更新子节点
-        patchChildren(n1, n2, container)
+        patchChildren(n1, n2, el)
     }
 
     function patch(n1, n2, container) {
