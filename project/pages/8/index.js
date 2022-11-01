@@ -8,6 +8,12 @@ const options = {
     insert(el, parent, anchor) {
         parent.insertBefore(el, anchor)
     },
+    createText(text) {
+        return document.createTextNode(text)
+    },
+    setText(el, text) {
+        el.nodeValue = text
+    },
     patchProps(el, key, prevValue, nextValue) {
         if (/^on/.test(key)) {
             const invokers = el._vei || (el._vei = {})
@@ -16,13 +22,16 @@ const options = {
             if (nextValue) {
                 if (!invoker) {
                     invoker = el._vei[key] = (e) => {
+                        if (e.timeStamp < invoker.attached) return
                         if (Array.isArray(invoker.value)) {
                             invoker.value.forEach(fn => fn(e))
                         } else {
                             invoker.value(e)
                         }
                     }
+
                     invoker.value = nextValue
+                    invoker.attached = performance.now()
                     el.addEventListener(name, invoker)
                 } else {
                     invoker.value = nextValue
@@ -30,11 +39,9 @@ const options = {
             } else if (invoker) {
                 el.removeEventListener(name, invoker)
             }
-        }
-        if (key === 'class') {
+        } else if (key === 'class') {
             el.className = nextValue || ''
-        }
-        if (shouldAsProps(el, key, nextValue)) {
+        } else if (shouldAsProps(el, key, nextValue)) {
             const type = typeof el[key]
             if (type === 'boolean' && nextValue === '') {
                 el[key] = true
@@ -112,8 +119,8 @@ const render = createRenderer(options).render
 // 事件冒泡
 const bol = ref(false)
 const app = document.getElementById('app')
+
 effect(() => {
-    console.log(bol.value)
     const vnode = {
         type: 'div',
         props: bol.value ? {
