@@ -5,7 +5,7 @@ const options = {
     setElementText(el, text) {
         el.textContent = text
     },
-    insert(el, parent, anchor) {
+    insert(el, parent, anchor = null) {
         parent.insertBefore(el, anchor)
     },
     createText(text) {
@@ -59,7 +59,7 @@ const render = createRenderer(options).render
 
 
 // diff
-const bol = ref(false)
+const bol = ref(true)
 effect(() => {
     const vnode = {
         type: 'div',
@@ -68,27 +68,38 @@ effect(() => {
                 class: 'box'
             },
             onClick: () => {
-                bol.value = true
+                bol.value = false
             }
         },
         children: bol.value ? [{
             type: 'p',
-            children: '1'
+            children: '1',
+            key: 1
         }, {
             type: 'p',
-            children: '2'
+            children: '2',
+            key: 2
         }, {
             type: 'p',
-            children: '3'
+            children: 'hello',
+            key: 3
+        }, {
+            type: 'p',
+            children: '4',
+            key: 4
         }] : [{
             type: 'p',
-            children: '4'
+            children: 'world',
+            key: 3
         }, {
             type: 'p',
-            children: '5'
+            children: '1',
+            key: 1
         }, {
             type: 'p',
-            children: '6'
+            children: '2',
+            key: '2',
+            key: 2
         }]
     }
     render(vnode, document.getElementById('app'))

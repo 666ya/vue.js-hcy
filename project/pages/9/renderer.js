@@ -20,7 +20,7 @@ function createRenderer(options) {
     /**
      *  元素
      */
-    function mountElememt(vnode, container) {
+    function mountElememt(vnode, container, anchor) {
         const el = vnode.el = createElement(vnode.type)
         if (typeof vnode.children === 'string') {
             setElementText(el, vnode.children)
@@ -48,7 +48,7 @@ function createRenderer(options) {
                 patchProps(el, key, null, vnode.props[key])
             }
         }
-        insert(el, container)
+        insert(el, container, anchor)
     }
 
     function patchChildren(n1, n2, container) {
@@ -63,28 +63,72 @@ function createRenderer(options) {
             if (Array.isArray(n1.children)) {
                 const oldChildren = n1.children
                 const newChildren = n2.children
+                // let lastIndex = 0
+                // for (let i = 0; i < newChildren.length; i++) {
+                //     const newVNode = newChildren[i]
+                //     let find = false
+                //     for (let j = 0; j < oldChildren.length; j++) {
+                //         const oldVNode = oldChildren[j]
+                //         if (newVNode.key === oldVNode.key) {
+                //             find = true
+                //             patch(oldVNode, newVNode, container)
+                //             if (j < lastIndex) {
+                //                 const prevVNode = newChildren[i - 1]
+                //                 if (prevVNode) {
+                //                     const anchor = prevVNode.el.nextSibling
+                //                     insert(newVNode.el, container, anchor)
+                //                 }
+                //             } else {
+                //                 lastIndex = j
+
+                //             }
+                //             break
+                //         }
+                //     }
+                //     if (!find) {
+                //         // 需要新增的元素
+                //         const prevVNode = newChildren[i - 1]
+                //         let anchor = null
+                //         if (prevVNode) {
+                //             anchor = prevVNode.el.nextSibling
+
+                //         } else {
+                //             anchor = container.firstChild
+                //         }
+                //         patch(null, newVNode, container, anchor)
+                //     }
+                // }
+                // for (let i = 0; i < oldChildren.length; i++) {
+                //     const oldVNode = oldChildren[i]
+                //     const has = newChildren.find(({
+                //         key
+                //     }) => oldVNode.key === key)
+                //     if (!has) {
+                //         umount(oldVNode)
+                //     }
+                // }
                 const oldLen = oldChildren.length
                 const newLen = newChildren.length
                 const commonLenth = Math.min(oldLen, newLen)
                 for (let i = 0; i < commonLenth; i++) {
-                    patch(oldChildren[i], newChildren[i], container)
+                    patch(oldChildren[i], newChildren[i], container, null)
                 }
                 if (newLen > oldLen) {
                     for (let i = commonLenth; i < newLen; i++) {
-                        patch(null, newChildren[i], container)
+                        patch(null, newChildren[i], container, null)
                     }
                 } else if (oldLen > newLen) {
                     for (let i = commonLenth; i < oldLen; i++) {
                         umount(oldChildren[i])
                     }
                 }
-                // n1.children.forEach(c => {
-                //     umount(c)
-                // })
-                // n2.children.forEach(c => patch(null, c, container))
+                n1.children.forEach(c => {
+                    umount(c)
+                })
+                n2.children.forEach(c => patch(null, c, container, null))
             } else {
                 setElementText(container, '')
-                n2.children.forEach(c => patch(null, c, container))
+                n2.children.forEach(c => patch(null, c, container, null))
             }
         } else {
             if (Array.isArray(n1.children)) {
@@ -116,7 +160,7 @@ function createRenderer(options) {
         patchChildren(n1, n2, el)
     }
 
-    function patch(n1, n2, container) {
+    function patch(n1, n2, container, anchor) {
         if (n1 && n1.type !== n2.type) {
             umount(n1)
             n1 = null
@@ -129,7 +173,7 @@ function createRenderer(options) {
             // 元素标签
             if (!n1) {
                 // 第一次即挂载
-                mountElememt(n2, container)
+                mountElememt(n2, container, anchor)
             } else {
                 patchElement(n1, n2, container)
             }
@@ -138,7 +182,7 @@ function createRenderer(options) {
             if (!n1) {
                 // const el = n2.el = document.createTextNode(n2.type)
                 const el = n2.el = createText(n2.type)
-                insert(el, container)
+                insert(el, container, anchor)
             } else {
                 const el = n2.el = n1.el
                 if (n2.children !== n1.children) {
