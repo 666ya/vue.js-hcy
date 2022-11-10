@@ -3,18 +3,36 @@ const bucket = new WeakMap()
 const ITERATE_KEY = Symbol()
 const effectStack = []
 // 定义一个任务队列
-const jobQueue = new Set()
-const p = Promise.resolve()
-let isFlushing = false
+// const jobQueue = new Set()
+// const p = Promise.resolve()
+// let isFlushing = false
 
-function flushJob() {
-    if (isFlushing) return
-    isFlushing = true
-    p.then(() => {
-        jobQueue.forEach(job => job())
-    }).finally(() => {
-        isFlushing = false
-    })
+// function flushJob() {
+//     if (isFlushing) return
+//     isFlushing = true
+//     p.then(() => {
+//         jobQueue.forEach(job => job())
+//     }).finally(() => {
+//         isFlushing = false
+//     })
+// }
+const queue = new Set()
+let isFlushing = false
+const p = Promise.resolve()
+
+function queueJob(job) {
+    queue.add(job)
+    if (!isFlushing) {
+        isFlushing = true
+        p.then(() => {
+            try {
+                queue.forEach(job => job())
+            } finally {
+                isFlushing = false
+                queue.clear = 0
+            }
+        })
+    }
 }
 // arrayInstument
 
