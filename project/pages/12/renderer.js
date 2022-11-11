@@ -166,7 +166,7 @@ function createRenderer(options) {
         const props = {}
         const attrs = {}
         for (const key in propsData) {
-            if (key in options) {
+            if (key in options || key.startsWith('on')) {
                 props[key] = propsData[key]
             } else {
                 attrs[key] = propsData[key]
@@ -187,12 +187,18 @@ function createRenderer(options) {
         }
         return false
     }
+    let currentInstance = null
+
+    function setCurrentInstance(instance) {
+        currentInstance = instance
+    }
 
     function mountCompoennt(vnode, container, anchor) {
         const componentOptions = vnode.type
-        const {
+        let {
             render,
             data,
+            setup,
             props: propsOptions,
             beforeCreate,
             created,
@@ -205,23 +211,63 @@ function createRenderer(options) {
         beforeCreate && beforeCreate()
         const [props, attrs] = resolveProps(propsOptions, vnode.props)
         const state = reactive(data())
+        const slots = vnode.children || {}
         const instance = {
             state,
             props: shallowReactive(props),
             isMounted: false,
-            subTree: null
+            subTree: null,
+            slots,
+            mounted: []
         }
+        let setupState = null
+        if (setup) {
+            function emit(event, ...payload) {
+                const eventName = 'on' + event[0].toUpperCase() + event.slice(1)
+                const handler = instance.props[eventName]
+                if (handler) {
+                    handler(...payload)
+                } else {
+                    console.error('事件不存在')
+                }
+            }
+
+            function onMounted(fn) {
+                currentInstance.mounted.push(fn)
+            }
+            const setupContext = {
+                attrs,
+                emit,
+                slots
+            }
+            setCurrentInstance(instance)
+            const setupResult = setup(shallowReadonly(instance.props), setupContext)
+            setCurrentInstance(null)
+            if (typeof setupResult === 'function') {
+                if (!render) {
+                    render = setupResult
+                }
+            } else {
+                setupState = setupResult
+            }
+        }
+
         vnode.component = instance
         const renderContext = new Proxy(instance, {
             get(t, k, r) {
                 const {
                     state,
-                    props
+                    props,
+                    slots
                 } = t
-                if (state && k in state) {
+                if (setupState && key in setupState) {
+                    return setupState[k]
+                } else if (state && k in state) {
                     return state[k]
                 } else if (k in props) {
                     return props[k]
+                } else if (k === '$slots') {
+                    return slots
                 } else {
                     console.error('不存在')
                 }
@@ -231,7 +277,9 @@ function createRenderer(options) {
                     state,
                     props
                 } = t
-                if (state && k in state) {
+                if (setupState && k in setupState) {
+                    setupState[k] = v
+                } else if (state && k in state) {
                     state[k] = v
                 } else if (k in props) {
                     console.log(`Attemping to mutate props "${k}". Props are readonly.`)
@@ -247,7 +295,8 @@ function createRenderer(options) {
                 beforeMount && beforeMount.call(renderContext)
                 patch(null, subTree, container, anchor)
                 instance.isMounted = true
-                mounted && mounted.call(renderContext)
+                // mounted && mounted.call(renderContext)
+                instance.mounted && instance.mounted.forEach(hook => hook.call(state))
             } else {
                 beforeUpdate && beforeUpdate.call(renderContext)
                 patch(instance.subTree, subTree, container, anchor)

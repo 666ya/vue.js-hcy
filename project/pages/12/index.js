@@ -8,7 +8,18 @@ const MyComponent = {
             count: 0
         }
     },
-
+    setup: (props, setupContext) => {
+        const {
+            emit
+        } = setupContext
+        emit('click')
+        return function () {
+            return {
+                type: 'div',
+                children: 'aaa'
+            }
+        }
+    },
     render() {
         return {
             type: 'div',
@@ -38,7 +49,10 @@ const render = createRenderer(options).render
 const CompVnode = {
     type: MyComponent,
     props: {
-        title: '组件例子：'
+        title: '组件例子',
+        onClick: () => {
+            console.log('组件事件')
+        }
     }
 }
 render(CompVnode, document.getElementById('app'))
