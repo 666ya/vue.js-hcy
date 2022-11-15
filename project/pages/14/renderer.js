@@ -40,9 +40,6 @@ function defineAsyncComponent(options) {
     return {
         name: 'AsyncComponentWrapper',
         setup() {
-            const {
-                props
-            } = currentInstance.vnode
             const loaded = ref(false)
             const error = ref(null)
             const loading = ref(false)
@@ -55,6 +52,8 @@ function defineAsyncComponent(options) {
             } else {
                 loading.value = true
             }
+
+
             load().then(c => {
                 InnerComp = c
                 loaded.value = true
@@ -78,8 +77,7 @@ function defineAsyncComponent(options) {
             return () => {
                 if (loaded.value) {
                     return {
-                        type: InnerComp,
-                        props
+                        type: InnerComp
                     }
                 } else if (error.value && options.errorComponent) {
                     return {
@@ -258,7 +256,7 @@ function createRenderer(options) {
     /**
      *  组件
      */
-    function resolveProps(options = {}, propsData = {}) {
+    function resolveProps(options, propsData) {
         const props = {}
         const attrs = {}
         for (const key in propsData) {
@@ -316,7 +314,6 @@ function createRenderer(options) {
         const state = !isFunctional && data ? reactive(data()) : {}
         const slots = vnode.children || {}
         const instance = {
-            vnode: vnode,
             state,
             props: shallowReactive(props),
             isMounted: false,
@@ -360,7 +357,7 @@ function createRenderer(options) {
                     props,
                     slots
                 } = t
-                if (setupState && k in setupState) {
+                if (setupState && key in setupState) {
                     return setupState[k]
                 } else if (state && k in state) {
                     return state[k]
@@ -369,7 +366,7 @@ function createRenderer(options) {
                 } else if (k === '$slots') {
                     return slots
                 } else {
-                    console.error(`${k}不存在`)
+                    console.error('不存在')
                 }
             },
             set(t, k, v, r) {
@@ -384,7 +381,7 @@ function createRenderer(options) {
                 } else if (k in props) {
                     console.log(`Attemping to mutate props "${k}". Props are readonly.`)
                 } else {
-                    console.error(`${k}不存在`)
+                    console.error('不存在')
                 }
             }
         })

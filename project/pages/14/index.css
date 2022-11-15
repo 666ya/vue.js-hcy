@@ -1,0 +1,32 @@
+body,html{
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+#app{
+    position: relative;
+}
+#app,div{
+    /* border: 1px solid #3e96f0; */
+    height: 100%
+}
+
+.loadingWrapper{
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+ 
+    line-height: 50%;
+}
+.loadingWrapper p{
+    position: absolute;
+    font-size: 20px;
+    text-align: center;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;   
+}

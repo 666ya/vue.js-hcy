@@ -57,9 +57,9 @@ function FunctionalComp(props) {
 FunctionalComp.props = {
     title: String
 }
-/**
- *   异步组件example
- */
+
+
+
 const MyLoadingComp = {
     render() {
         return {
@@ -85,47 +85,115 @@ const MyErrorComp = {
         }
     }
 }
-const AsyncConp = defineAsyncComponent({
+/**
+ *   异步组件example
+ */
+const DialogComp = {
+    props: {
+        dialogTitle: String,
+        isShow: Boolean
+    },
+    render() {
+        return {
+            type: 'div',
+            props: {
+                class: 'dialog-mask',
+                style: this.isShow ? 'dispaly:block ' : 'display: none'
+            },
+            children: [{
+                type: 'div',
+                props: {
+                    class: 'dialog-wrapper'
+                },
+                children: [{
+                    type: 'p',
+                    props: {
+                        class: 'dialog-nav'
+                    },
+                    children: `${this.dialogTitle || ''}`
+                }, {
+                    type: 'div',
+                    props: {
+                        class: 'dialog-body'
+                    }
+                }, {
+                    type: 'div',
+                    props: {
+                        class: 'dialog-footer'
+                    },
+                    children: [{
+                        type: 'button',
+                        props: {
+                            class: 'btn'
+                        },
+                        children: '取消'
+                    }]
+                }]
+            }],
+        }
+    }
+}
+
+const CommonDialog = defineAsyncComponent({
     loader: () => new Promise((resolve, reject) => {
         // reject('加载失败')
         setTimeout(() => {
-            // resolve({
-            //     render() {
-            //         return {
-            //             type: 'div',
-            //             children: '异步组件'
-            //         }
-            //     }
-            // })
-            reject('加载失败')
-        }, 1000)
+            console.log('async')
+            resolve(DialogComp)
+        }, 2000)
 
     }),
-    onError: (retry, fail, count) => {
-        console.log(count)
-        // retry()
-        // console.log(count)
-        if (count > 4) {
-            fail()
-        } else {
-            retry()
-        }
-    },
-    delay: 200,
-    loadingComponent: MyLoadingComp,
-    errorComponent: MyErrorComp,
-    timeout: 2000
+    // onError: (retry, fail, count) => {
+    //     console.log(count)
+    //     // retry()
+    //     // console.log(count)
+    //     if (count > 4) {
+    //         fail()
+    //     } else {
+    //         retry()
+    //     }
+    // },
+    // delay: 200,
+    // loadingComponent: MyLoadingComp,
+    // errorComponent: MyErrorComp,
+    // timeout: 2000
 })
-const CompVnode = {
-    type: 'div',
-    props: {
-        onClick: () => {
-            console.log('组件事件')
+let isShow = ref(false)
+const App = {
+    name: 'App',
+    data() {
+        return {
+            isShow: false
         }
     },
-    children: [{
-        type: AsyncConp
-    }]
+    render() {
+        return {
+            type: 'div',
+            props: {
+                style: 'margin: 8px'
+            },
+            children: [{
+                type: CommonDialog,
+                props: {
+                    dialogTitle: '日志列表',
+                    isShow: this.isShow
+                }
+            }, {
+                type: 'button',
+                props: {
+                    class: 'btn',
+                    onClick: () => {
+                        console.log('aa')
+                        this.isShow = !this.isShow
+                    }
+                },
+                children: '显示弹框'
+            }]
+        }
+    }
+}
+const CompVnode = {
+    type: App
 }
 const render = createRenderer(options).render
 render(CompVnode, document.getElementById('app'))
