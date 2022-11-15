@@ -57,14 +57,78 @@ function FunctionalComp(props) {
 FunctionalComp.props = {
     title: String
 }
-const render = createRenderer(options).render
-const CompVnode = {
-    type: FunctionalComp,
-    props: {
-        title: '组件例子',
-        onClick: () => {
-            console.log('组件事件')
+/**
+ *   异步组件example
+ */
+const MyLoadingComp = {
+    render() {
+        return {
+            type: 'div',
+            props: {
+                class: 'loadingWrapper'
+            },
+            children: [{
+                type: 'p',
+                children: 'loading……'
+            }]
         }
     }
 }
+const MyErrorComp = {
+    props: {
+        error: String
+    },
+    render() {
+        return {
+            type: 'div',
+            children: `${this.error}`
+        }
+    }
+}
+const AsyncConp = defineAsyncComponent({
+    loader: () => new Promise((resolve, reject) => {
+        // reject('加载失败')
+        setTimeout(() => {
+            // resolve({
+            //     render() {
+            //         return {
+            //             type: 'div',
+            //             children: '异步组件'
+            //         }
+            //     }
+            // })
+            reject('加载失败')
+        }, 1000)
+
+    }),
+    onError: (retry, fail, count) => {
+        console.log(count)
+        // retry()
+        // console.log(count)
+        if (count > 4) {
+            fail()
+        } else {
+            retry()
+        }
+    },
+    delay: 200,
+    loadingComponent: MyLoadingComp,
+    errorComponent: MyErrorComp,
+    timeout: 2000
+})
+const CompVnode = {
+    type: 'div',
+    props: {
+        onClick: () => {
+            console.log('组件事件')
+        }
+    },
+    children: [{
+        type: AsyncConp
+    }]
+}
+const render = createRenderer(options).render
 render(CompVnode, document.getElementById('app'))
+// setTimeout(() => {
+//     render(CompVnode, document.getElementById('app'))
+// }, 2000)

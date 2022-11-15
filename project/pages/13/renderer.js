@@ -8,6 +8,100 @@ function shouldAsProps(el, key, value) {
     return key in el
 }
 
+function defineAsyncComponent(options) {
+    if (typeof options === 'function') {
+        options = {
+            loader: options
+        }
+    }
+    const {
+        loader
+    } = options
+    let InnerComp = null
+
+    let retries = 0
+
+    function load() {
+        return loader().catch(err => {
+            if (options.onError) {
+                return new Promise((resolve, reject) => {
+                    const retry = () => {
+                        resolve(load())
+                        retries++
+                    }
+                    const fail = () => reject(err)
+                    options.onError(retry, fail, retries)
+                })
+            } else {
+                throw err
+            }
+        })
+    }
+    return {
+        name: 'AsyncComponentWrapper',
+        setup() {
+            const loaded = ref(false)
+            const error = ref(null)
+            const loading = ref(false)
+
+            let loadingTimer = null
+            if (options.delay) {
+                loadingTimer = setTimeout(() => {
+                    loading.value = true
+                }, options.delay)
+            } else {
+                loading.value = true
+            }
+
+
+            load().then(c => {
+                InnerComp = c
+                loaded.value = true
+            }).catch(err => error.value = err).finally(() => {
+                loading.value = false
+                clearTimeout(loadingTimer)
+            })
+
+            let timer = null
+            if (options.timeout) {
+                timer = setTimeout(() => {
+                    const err = new Error(`Async component timed out after ${options.timeout}ms.`)
+                    error.value = err
+                }, options.timeout)
+            }
+
+            const placeholder = {
+                type: Text,
+                children: ''
+            }
+            return () => {
+                if (loaded.value) {
+                    return {
+                        type: InnerComp
+                    }
+                } else if (error.value && options.errorComponent) {
+                    return {
+                        type: options.errorComponent,
+                        props: {
+                            error: error.value
+                        }
+                    }
+                } else if (loading.value && options.loadingComponent) {
+                    return {
+                        type: options.loadingComponent
+                    }
+                }
+                return placeholder
+            }
+        }
+    }
+}
+let currentInstance = null
+
+function onMounted(fn) {
+    currentInstance.mounted.push(fn)
+}
+
 function createRenderer(options) {
     const {
         createElement,
@@ -187,7 +281,7 @@ function createRenderer(options) {
         }
         return false
     }
-    let currentInstance = null
+
 
     function setCurrentInstance(instance) {
         currentInstance = instance
@@ -216,8 +310,8 @@ function createRenderer(options) {
 
         } = componentOptions
         beforeCreate && beforeCreate()
-        const [props, attrs] = resolveProps(propsOptions, vnode.props)
-        const state = !isFunctional ? reactive(data()) : {}
+        const [props, attrs] = resolveProps(propsOptions || {}, vnode.props)
+        const state = !isFunctional && data ? reactive(data()) : {}
         const slots = vnode.children || {}
         const instance = {
             state,
@@ -237,10 +331,6 @@ function createRenderer(options) {
                 } else {
                     console.error('事件不存在')
                 }
-            }
-
-            function onMounted(fn) {
-                currentInstance.mounted.push(fn)
             }
             const setupContext = {
                 attrs,
@@ -303,7 +393,7 @@ function createRenderer(options) {
                 patch(null, subTree, container, anchor)
                 instance.isMounted = true
                 // mounted && mounted.call(renderContext)
-                instance.mounted && instance.mounted.forEach(hook => hook.call(state))
+                instance.mounted && instance.mounted.forEach(hook => hook.call(renderContext))
             } else {
                 beforeUpdate && beforeUpdate.call(renderContext)
                 patch(instance.subTree, subTree, container, anchor)
@@ -321,7 +411,14 @@ function createRenderer(options) {
             props
         } = component
         if (hasPropsChanged(n1.props, n2.props)) {
-
+            const [nextProps] = resolveProps(n2.type.props, n2.props)
+            for (const k in nextProps) {
+                props[k] = nextProps[k]
+            }
+            for (const k in props)
+                if (!(k in nextProps)) {
+                    delete props[k]
+                }
         }
     }
     // 更新
@@ -346,7 +443,7 @@ function createRenderer(options) {
             // 文本节点
             if (!n1) {
                 // const el = n2.el = document.createTextNode(n2.type)
-                const el = n2.el = createText(n2.type)
+                const el = n2.el = createText(n2.children)
                 insert(el, container, anchor)
             } else {
                 const el = n2.el = n1.el
@@ -377,6 +474,9 @@ function createRenderer(options) {
     function umount(vnode) {
         if (vnode.type === Fragment) {
             vnode.children.forEach(c => umount(c))
+            return
+        } else if (typeof vnode.type === 'object') {
+            umount(vnode.component.subTree)
             return
         }
         const parent = vnode.el.parentNode
