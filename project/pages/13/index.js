@@ -136,6 +136,7 @@ const DialogComp = {
 
 const CommonDialog = defineAsyncComponent({
     loader: () => new Promise((resolve, reject) => {
+        resolve(DialogComp)
         // reject('加载失败')
         setTimeout(() => {
             console.log('async')
@@ -158,6 +159,7 @@ const CommonDialog = defineAsyncComponent({
     // errorComponent: MyErrorComp,
     // timeout: 2000
 })
+console.log(CommonDialog)
 let isShow = ref(false)
 const App = {
     name: 'App',
