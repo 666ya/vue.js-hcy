@@ -1,5 +1,6 @@
 const Text = Symbol()
 const Fragment = Symbol()
+let currentInstance = null
 
 function shouldAsProps(el, key, value) {
     if (key === 'form' && el.tagName === 'INPUT') {
@@ -40,6 +41,9 @@ function defineAsyncComponent(options) {
     return {
         name: 'AsyncComponentWrapper',
         setup() {
+            const {
+                props
+            } = currentInstance.vnode
             const loaded = ref(false)
             const error = ref(null)
             const loading = ref(false)
@@ -52,8 +56,6 @@ function defineAsyncComponent(options) {
             } else {
                 loading.value = true
             }
-
-
             load().then(c => {
                 InnerComp = c
                 loaded.value = true
@@ -77,7 +79,8 @@ function defineAsyncComponent(options) {
             return () => {
                 if (loaded.value) {
                     return {
-                        type: InnerComp
+                        type: InnerComp,
+                        props
                     }
                 } else if (error.value && options.errorComponent) {
                     return {
@@ -96,12 +99,14 @@ function defineAsyncComponent(options) {
         }
     }
 }
-let currentInstance = null
+
 
 function onMounted(fn) {
     currentInstance.mounted.push(fn)
 }
-
+/**
+ *  渲染器
+ */
 function createRenderer(options) {
     const {
         createElement,
@@ -256,7 +261,7 @@ function createRenderer(options) {
     /**
      *  组件
      */
-    function resolveProps(options, propsData) {
+    function resolveProps(options = {}, propsData = {}) {
         const props = {}
         const attrs = {}
         for (const key in propsData) {
@@ -314,12 +319,24 @@ function createRenderer(options) {
         const state = !isFunctional && data ? reactive(data()) : {}
         const slots = vnode.children || {}
         const instance = {
+            vnode: vnode,
             state,
             props: shallowReactive(props),
             isMounted: false,
             subTree: null,
             slots,
-            mounted: []
+            mounted: [],
+            KeepAliveCtx: null
+        }
+        const __isKeepAlive = vnode.type.__isKeepAlive
+        if (__isKeepAlive) {
+            instance.KeepAliveCtx = {
+                move(vnode, container, anchor) {
+                    insert(vnode.component.subTree.el, container, anchor)
+                },
+                createElement,
+                umount
+            }
         }
         let setupState = null
         if (setup) {
@@ -357,7 +374,7 @@ function createRenderer(options) {
                     props,
                     slots
                 } = t
-                if (setupState && key in setupState) {
+                if (setupState && k in setupState) {
                     return setupState[k]
                 } else if (state && k in state) {
                     return state[k]
@@ -366,7 +383,7 @@ function createRenderer(options) {
                 } else if (k === '$slots') {
                     return slots
                 } else {
-                    console.error('不存在')
+                    console.error(`${k}不存在`)
                 }
             },
             set(t, k, v, r) {
@@ -381,7 +398,7 @@ function createRenderer(options) {
                 } else if (k in props) {
                     console.log(`Attemping to mutate props "${k}". Props are readonly.`)
                 } else {
-                    console.error('不存在')
+                    console.error(`${k}不存在`)
                 }
             }
         })
@@ -463,7 +480,12 @@ function createRenderer(options) {
         } else if (typeof type === 'object' || typeof type === 'function') {
             // 组件
             if (!n1) {
-                mountCompoennt(n2, container, anchor)
+                if (n2.keptAlive) {
+                    n2.KeepAliveInstance._activate(n2, container, anchor)
+                } else {
+                    mountCompoennt(n2, container, anchor)
+                }
+
             } else {
                 patchComponent(n1, n2, anchor)
             }
@@ -476,7 +498,12 @@ function createRenderer(options) {
             vnode.children.forEach(c => umount(c))
             return
         } else if (typeof vnode.type === 'object') {
-            umount(vnode.component.subTree)
+            if (vnode.shouldKeepAlive) {
+                vnode.KeepAliveInstance._deActivate(vnode)
+            } else {
+                umount(vnode.component.subTree)
+            }
+
             return
         }
         const parent = vnode.el.parentNode
@@ -499,3 +526,8 @@ function createRenderer(options) {
         render
     }
 }
+
+
+/**
+ *  内置组件
+ */

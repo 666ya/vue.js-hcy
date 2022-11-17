@@ -1,0 +1,31 @@
+*{
+    margin: 0;
+    padding: 0;
+}
+body,html{
+    height: 100%;
+}
+#app{
+     position: relative;
+    height: 100%
+}
+button{
+    background: #3e96f0;
+    height: 32px;
+    line-height: 32px;
+    text-align: center;
+    color:#fff;
+    cursor: pointer;
+    padding: 0 12px;
+    border: none;
+}
+button + button{
+    margin-left: 10px;
+}
+
+.storageContainer{
+    height: 100px;
+    width: 100%;
+    display: block;
+    background: #3e96f0;
+}

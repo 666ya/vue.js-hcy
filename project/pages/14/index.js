@@ -1,131 +1,144 @@
-const MyComponent = {
-    name: 'MyComponent',
-    props: {
-        title: String
-    },
-    data() {
-        return {
-            count: 0
-        }
-    },
-    setup: (props, setupContext) => {
-        const {
-            emit
-        } = setupContext
-        emit('click')
-        return function () {
-            return {
-                type: 'div',
-                children: 'aaa'
-            }
-        }
-    },
-    render() {
-        return {
-            type: 'div',
-            children: [{
-                    type: 'span',
-                    children: `${this.title}：${this.count}`
-                },
-                {
-                    type: 'button',
-                    children: '点击',
-                    props: {
-                        style: 'margin-left: 10px',
-                        onclick: () => {
-                            this.count++
-                        }
-                    }
-                }
-            ]
-        }
-    },
-    mounted() {
-        this.title = 'aaa'
-        console.log(this.count)
-    },
-}
-
-// 无状态组件
-function FunctionalComp(props) {
-    return {
-        type: 'div',
-        children: props.title
+const MyTab1 = {
+    setup() {
+        onMounted(() => {
+            console.log('挂载1')
+        })
+        return () => ({
+            type: 'input',
+            props: {
+                type: 'text',
+                value: ''
+            },
+        })
     }
 }
-// 定义props
-FunctionalComp.props = {
-    title: String
+const MyTab2 = {
+    setup() {
+        onMounted(() => {
+            console.log('挂载2')
+        })
+        return () => ({
+            type: 'input',
+            props: {
+                type: 'text',
+                value: ''
+            },
+        })
+    }
 }
-/**
- *   异步组件example
- */
-const MyLoadingComp = {
+
+const MyTab3 = {
+    setup() {
+        onMounted(() => {
+            console.log('挂载3')
+        })
+        return () => ({
+            type: 'input',
+            props: {
+                type: 'text',
+                value: ''
+            },
+        })
+    }
+}
+
+
+function tabList() {
+    const list = []
+    for (let i = 0; i < 3; i++) {
+        list.push({
+            type: 'button',
+            // children: this.isShow ? '隐藏' : '显示',
+            children: `tab${i+1}`,
+            props: {
+                index: i,
+                onclick: () => {
+                    this.curTab = i + 1
+                }
+            }
+        })
+    }
+    return list
+}
+
+function slotDefault() {
+    let curComp = null
+    switch (this.curTab) {
+        case 1:
+            curComp = MyTab1
+            break;
+        case 2:
+            curComp = MyTab2
+            break;
+        case 3:
+            curComp = MyTab3
+            break;
+    }
+    return {
+        default () {
+            return {
+                type: curComp
+            }
+        }
+    }
+}
+const App = {
+    name: 'App',
+    data() {
+        return {
+            isShow: true,
+            curTab: 1
+        }
+    },
     render() {
         return {
             type: 'div',
             props: {
-                class: 'loadingWrapper'
+                class: 'app-main'
             },
             children: [{
-                type: 'p',
-                children: 'loading……'
-            }]
+                    type: 'div',
+                    children: tabList.call(this)
+                },
+                {
+                    type: KeepAlive,
+                    props: {
+                        curTab: this.curTab,
+                        max: 3
+                    },
+                    children: slotDefault.call(this)
+                },
+                //     (this.isShow ? {
+                //     type: KeepAlive,
+                //     children: {
+                //         default () {
+                //             let curComp = null
+                //             switch (this.curTab) {
+                //                 case 1:
+                //                     curComp = MyTab1
+                //                     break;
+                //                 case 2:
+                //                     curComp = MyTab2
+                //                     break;
+                //                 case 3:
+                //                     curComp = MyTab3
+                //                     break;
+                //             }
+                //             return {
+                //                 type: curComp
+                //             }
+                //         }
+                //     }
+                // } : {
+                //     type: Text,
+                //     children: ''
+                //     })
+            ]
         }
     }
 }
-const MyErrorComp = {
-    props: {
-        error: String
-    },
-    render() {
-        return {
-            type: 'div',
-            children: `${this.error}`
-        }
-    }
-}
-const AsyncConp = defineAsyncComponent({
-    loader: () => new Promise((resolve, reject) => {
-        // reject('加载失败')
-        setTimeout(() => {
-            // resolve({
-            //     render() {
-            //         return {
-            //             type: 'div',
-            //             children: '异步组件'
-            //         }
-            //     }
-            // })
-            reject('加载失败')
-        }, 1000)
-
-    }),
-    onError: (retry, fail, count) => {
-        console.log(count)
-        // retry()
-        // console.log(count)
-        if (count > 4) {
-            fail()
-        } else {
-            retry()
-        }
-    },
-    delay: 200,
-    loadingComponent: MyLoadingComp,
-    errorComponent: MyErrorComp,
-    timeout: 2000
-})
 const CompVnode = {
-    type: 'div',
-    props: {
-        onClick: () => {
-            console.log('组件事件')
-        }
-    },
-    children: [{
-        type: AsyncConp
-    }]
+    type: App,
 }
 const render = createRenderer(options).render
 render(CompVnode, document.getElementById('app'))
