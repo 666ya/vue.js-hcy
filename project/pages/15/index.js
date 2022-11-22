@@ -1,10 +1,5 @@
-const template = `<div><p>vue</p><p>template</p></div>`
+const template = `<div><p>vue</p><span></span><p>template</p></div>`
 const ast = parse(template)
 transform(ast)
-
-function render() {
-    return h('div', [
-        h('p', 'vue'),
-        h('p', 'tempalte')
-    ])
-}
+const code = generate(ast.jsNode)
+console.log(code)

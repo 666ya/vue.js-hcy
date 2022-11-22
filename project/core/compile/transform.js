@@ -29,36 +29,36 @@ function createCallExpression(callee, arguments) {
 }
 
 function transformText(node, context) {
-    if (node.type === 'Text') {
-        // node.content = node.content.repeat(2)
-        context.replacNode({
-            type: 'Element',
-            tag: 'span'
-        })
-    }
-    // if (node.type !== 'TEXT') {
-    //     return
+    // if (node.type === 'Text') {
+    //     // node.content = node.content.repeat(2)
+    //     context.replacNode({
+    //         type: 'Element',
+    //         tag: 'span'
+    //     })
     // }
-    // node.jsNode = createStringLiteral(node.content)
+    if (node.type !== 'Text') {
+        return
+    }
+    node.jsNode = createStringLiteral(node.content)
 }
 
 function transformElemnet(node) {
-    if (node.type === 'Element' && node.tag === 'p') {
-        node.tag = 'h1'
-    }
-    // return () => {
-    //     if (node.type !== 'Element') {
-    //         return
-    //     }
-
-    //     const callExp = createCallExpression('h', [
-    //         createStringLiteral(node.tag)
-    //     ])
-    //     node.children.length === 1 ?
-    //         callExp.arguments.push(node.children[0].jsNode) :
-    //         callExp.arguments.push(createCallExpression(node.children.map(c => c.jsNode)))
-    //     node.jsNode = callExp
+    // if (node.type === 'Element' && node.tag === 'p') {
+    //     node.tag = 'h1'
     // }
+    return () => {
+        if (node.type !== 'Element') {
+            return
+        }
+
+        const callExp = createCallExpression('h', [
+            createStringLiteral(node.tag)
+        ])
+        node.children.length === 1 ?
+            callExp.arguments.push(node.children[0].jsNode) :
+            callExp.arguments.push(createArrayExpression(node.children.map(c => c.jsNode)))
+        node.jsNode = callExp
+    }
 }
 
 function transformRoot(node) {
@@ -86,10 +86,13 @@ let count = 0
 function traverseNode(ast, context) {
     // const currentNode = ast
     context.currentNode = ast
+    const existFns = []
     const transforms = context.nodeTransforms
     for (let i = 0; i < transforms.length; i++) {
-        count++
-        transforms[i](context.currentNode, context)
+        const exisFn = transforms[i](context.currentNode, context)
+        if (exisFn) {
+            existFns.push(exisFn)
+        }
     }
     const children = context.currentNode.children
     if (children) {
@@ -98,6 +101,10 @@ function traverseNode(ast, context) {
             context.childIndex = i
             traverseNode(children[i], context)
         }
+    }
+    let i = existFns.length
+    while (i--) {
+        existFns[i]()
     }
 }
 
@@ -110,12 +117,33 @@ function transform(ast) {
             context.parent.children[context.childIndex] = node
             context.currentNode = node
         },
+        removeNode() {
+            if (context.parent) {
+                context.parent.children.splice(context.childIndex, 1)
+                context.currentNode = null
+            }
+        },
         nodeTransforms: [
+            transformRoot,
             transformElemnet,
             transformText
         ]
     }
     traverseNode(ast, context)
-    console.log(ast)
-    dump(ast)
+}
+
+
+
+
+const FunctionDeclNodde = {
+    type: 'FunctionDecl',
+    id: {
+        type: 'Identifier',
+        name: 'render'
+    },
+    params: [],
+    body: [{
+        type: 'statement',
+        return: null
+    }]
 }
